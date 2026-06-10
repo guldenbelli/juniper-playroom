@@ -1,4 +1,4 @@
-var CACHE = "juniper-playroom-v4";
+var CACHE = "juniper-playroom-v5";
 var ASSETS = [
   "./", "./index.html", "./common.js", "./manifest.json", "./icon.png",
   "./sparkles.html", "./bubbles.html", "./animals.html",
