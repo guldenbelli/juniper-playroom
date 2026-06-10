@@ -151,7 +151,16 @@ window.JS = (function () {
       h.className = "js-chip js-chip-left";
       h.textContent = "🏠";
       document.body.appendChild(h);
-      holdChip(h, function () { location.href = "index.html"; });
+      /* single tap — works on desktop and iPad alike */
+      h.addEventListener("pointerdown", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }, { capture: true });
+      h.addEventListener("pointerup", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        location.href = "index.html";
+      }, { capture: true });
     }
     if (opts.sound !== false) {
       var s = document.createElement("div");
