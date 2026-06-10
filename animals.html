@@ -80,12 +80,19 @@
     AUDIO[k] = a;
   });
 
+  function stopAll() {
+    Object.keys(AUDIO).forEach(function(k) {
+      var a = AUDIO[k];
+      a.pause();
+      a.currentTime = 0;
+    });
+  }
+
   function playSound(name) {
     if (!JS.soundOn) return;
+    stopAll();
     var a = AUDIO[name];
     if (!a) return;
-    a.pause();
-    a.currentTime = 0;
     a.play().catch(function(){});
   }
 
