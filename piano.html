@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#231a3a">
+<title>Piano</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; position: fixed; inset: 0;
+    background: #231a3a;
+    touch-action: none; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    font-family: ui-rounded, -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  #keys {
+    position: absolute; inset: 0;
+    display: flex; gap: 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 72px) 10px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  }
+  .key {
+    flex: 1; border-radius: 22px 22px 28px 28px;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 4vh;
+    font-size: clamp(22px, 4vmin, 40px);
+    transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+    will-change: transform, filter;
+    pointer-events: none;
+  }
+  .key.lit {
+    transform: scaleY(.96) scaleX(1.04);
+    filter: brightness(1.25) saturate(1.2);
+    box-shadow: 0 0 40px 6px var(--glow);
+  }
+  .note {
+    position: absolute; transform: translate(-50%, -50%);
+    font-size: 34px; pointer-events: none; line-height: 1;
+    animation: floatnote 1.2s ease-out forwards;
+    text-shadow: 0 2px 12px rgba(0,0,0,.4);
+  }
+  @keyframes floatnote {
+    0% { transform: translate(-50%,-50%) translateY(0) scale(.5) rotate(0); opacity: 1; }
+    100% { transform: translate(-50%,-50%) translateY(-120px) scale(1.1) rotate(var(--nr)); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="keys"></div>
+<script src="common.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* C major pentatonic, two octaves — every combination sounds lovely */
+  var NOTES = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25];
+  var COLORS = ["#ff8fab", "#ffb380", "#ffe066", "#9ef0a0", "#7fd8f7", "#9bb1ff", "#c79bff", "#ff9be8"];
+  var GLOWS  = ["#ff8fabaa","#ffb380aa","#ffe066aa","#9ef0a0aa","#7fd8f7aa","#9bb1ffaa","#c79bffaa","#ff9be8aa"];
+  var ICONS  = ["🌟","🍑","🌞","🐸","💧","🫐","🍇","🌸"];
+  var keysWrap = document.getElementById("keys");
+  var keys = [];
+
+  NOTES.forEach(function (f, i) {
+    var k = document.createElement("div");
+    k.className = "key";
+    k.style.background = "linear-gradient(180deg, " + COLORS[i] + " 0%, " + COLORS[i] + "cc 100%)";
+    k.style.setProperty("--glow", GLOWS[i]);
+    k.textContent = ICONS[i];
+    keysWrap.appendChild(k);
+    keys.push(k);
+  });
+
+  function keyIndexAt(x) {
+    var r = keysWrap.getBoundingClientRect();
+    var inner = r.width - 20; /* padding */
+    var idx = Math.floor(((x - r.left - 10) / inner) * NOTES.length);
+    return Math.max(0, Math.min(NOTES.length - 1, idx));
+  }
+
+  var litTimers = {};
+  function strike(i, x, y) {
+    var f = NOTES[i];
+    JS.tone({ freq: f, type: "triangle", dur: 0.55, vol: 0.16 });
+    JS.tone({ freq: f * 2, type: "sine", dur: 0.3, vol: 0.04 });
+
+    var k = keys[i];
+    k.classList.add("lit");
+    clearTimeout(litTimers[i]);
+    litTimers[i] = setTimeout(function () { k.classList.remove("lit"); }, 220);
+
+    var n = document.createElement("div");
+    n.className = "note";
+    n.textContent = JS.pick(["🎵", "🎶", "♪", "✨"]);
+    n.style.left = x + "px"; n.style.top = y + "px";
+    n.style.setProperty("--nr", JS.rand(-30, 30).toFixed(0) + "deg");
+    n.addEventListener("animationend", function () { n.remove(); });
+    document.body.appendChild(n);
+  }
+
+  var lastKey = {};
+  document.body.addEventListener("pointerdown", function (e) {
+    var i = keyIndexAt(e.clientX);
+    lastKey[e.pointerId] = i;
+    strike(i, e.clientX, e.clientY);
+  });
+  document.body.addEventListener("pointermove", function (e) {
+    if (lastKey[e.pointerId] === undefined) return;
+    var i = keyIndexAt(e.clientX);
+    if (i !== lastKey[e.pointerId]) {
+      lastKey[e.pointerId] = i;
+      strike(i, e.clientX, e.clientY);
+    }
+  });
+  function lift(e) { delete lastKey[e.pointerId]; }
+  document.body.addEventListener("pointerup", lift);
+  document.body.addEventListener("pointercancel", lift);
+
+  JS.makeChips();
+})();
+</script>
+</body>
+</html>

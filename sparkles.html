@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e0b2a">
+<title>Sparkles</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; position: fixed; inset: 0;
+    background: linear-gradient(180deg, #0e0b2a 0%, #1a1340 55%, #2c1b54 100%);
+    touch-action: none; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  }
+  .star { position: absolute; border-radius: 50%; background: #fff; opacity: .5;
+    animation: twinkle var(--tw) ease-in-out infinite alternate; }
+  @keyframes twinkle { from { opacity: .15; transform: scale(.8); } to { opacity: .7; transform: scale(1.15); } }
+  #stage { position: absolute; inset: 0; }
+  .pop {
+    position: absolute; transform: translate(-50%, -50%);
+    font-family: ui-rounded, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 800; line-height: 1; pointer-events: none;
+    will-change: transform, opacity;
+    animation: popfloat 2.4s cubic-bezier(.2,.8,.3,1) forwards;
+    text-shadow: 0 4px 24px rgba(0,0,0,.35);
+  }
+  @keyframes popfloat {
+    0%   { transform: translate(-50%,-50%) scale(0) rotate(var(--rot)); opacity: 0; }
+    8%   { transform: translate(-50%,-50%) scale(1.2) rotate(var(--rot)); opacity: 1; }
+    14%  { transform: translate(-50%,-50%) scale(1) rotate(var(--rot)); opacity: 1; }
+    70%  { opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% - 70px)) scale(1.05) rotate(var(--rot)); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .star { animation: none; opacity: .4; } }
+</style>
+</head>
+<body>
+<div id="sky"></div>
+<div id="stage"></div>
+<script src="common.js"></script>
+<script>
+(function () {
+  "use strict";
+  var stage = document.getElementById("stage");
+  var sky = document.getElementById("sky");
+
+  for (var i = 0; i < 55; i++) {
+    var s = document.createElement("div");
+    s.className = "star";
+    var size = 1 + Math.random() * 2.4;
+    s.style.width = size + "px"; s.style.height = size + "px";
+    s.style.left = Math.random() * 100 + "%";
+    s.style.top = Math.random() * 100 + "%";
+    s.style.setProperty("--tw", (1.4 + Math.random() * 2.6).toFixed(2) + "s");
+    s.style.animationDelay = (Math.random() * 3).toFixed(2) + "s";
+    sky.appendChild(s);
+  }
+
+  var EMOJI = ["🦊","🐰","🐥","🐬","🦋","🐢","🐙","🦁","🐸","🐳","🐶","🐱","🐼","🦄","🐞",
+    "🍓","🍌","🍎","🍉","🍪","🍦","🥕","✈️","🚗","🚀","⛵","🚂","🚁","🚜",
+    "⭐","🌙","🌈","☀️","❄️","🌸","🎈","🎀","💖","⚽","🥁"];
+  var LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  var DIGITS = "0123456789".split("");
+  var PASTELS = ["#ffb3c6","#ffd6a5","#caffbf","#9bf6ff","#bdb2ff","#fdffb6","#ffc6ff","#a0e7e5"];
+  var NOTES = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0];
+  var MAX_NODES = 90;
+
+  function trim() { while (stage.childNodes.length > MAX_NODES) stage.removeChild(stage.firstChild); }
+
+  function spawnPop(x, y) {
+    var el = document.createElement("div");
+    el.className = "pop";
+    var roll = Math.random();
+    if (roll < 0.58) el.textContent = JS.pick(EMOJI);
+    else if (roll < 0.82) { el.textContent = JS.pick(LETTERS); el.style.color = JS.pick(PASTELS); }
+    else { el.textContent = JS.pick(DIGITS); el.style.color = JS.pick(PASTELS); }
+    el.style.fontSize = JS.rand(64, 120) + "px";
+    el.style.left = x + "px"; el.style.top = y + "px";
+    el.style.setProperty("--rot", JS.rand(-12, 12).toFixed(1) + "deg");
+    el.addEventListener("animationend", function () { el.remove(); });
+    stage.appendChild(el);
+    trim();
+  }
+
+  var lastTrail = {};
+  document.body.addEventListener("pointerdown", function (e) {
+    spawnPop(e.clientX, e.clientY);
+    JS.burst(e.clientX, e.clientY, { stage: stage, count: 10 });
+    var f = JS.pick(NOTES);
+    JS.tone({ freq: f, type: "triangle", dur: 0.4, vol: 0.18 });
+    JS.tone({ freq: f * 2, type: "sine", dur: 0.25, vol: 0.05 });
+    lastTrail[e.pointerId] = { x: e.clientX, y: e.clientY };
+  });
+  document.body.addEventListener("pointermove", function (e) {
+    var last = lastTrail[e.pointerId];
+    if (!last) return;
+    var dx = e.clientX - last.x, dy = e.clientY - last.y;
+    if (dx * dx + dy * dy > 750) {
+      JS.burst(e.clientX, e.clientY, { stage: stage, count: 2 });
+      lastTrail[e.pointerId] = { x: e.clientX, y: e.clientY };
+    }
+  });
+  function endTrail(e) { delete lastTrail[e.pointerId]; }
+  document.body.addEventListener("pointerup", endTrail);
+  document.body.addEventListener("pointercancel", endTrail);
+
+  JS.makeChips();
+})();
+</script>
+</body>
+</html>

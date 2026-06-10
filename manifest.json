@@ -1,0 +1,13 @@
+{
+  "name": "Juniper's Playroom",
+  "short_name": "Playroom",
+  "display": "fullscreen",
+  "orientation": "any",
+  "start_url": "./index.html",
+  "scope": "./",
+  "background_color": "#0e0b2a",
+  "theme_color": "#0e0b2a",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

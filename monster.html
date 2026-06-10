@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#3a2455">
+<title>Feed Me!</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; position: fixed; inset: 0;
+    background: radial-gradient(circle at 50% 35%, #5a3a85 0%, #3a2455 60%, #2a1a40 100%);
+    touch-action: none; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    font-family: ui-rounded, -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  #stage { position: absolute; inset: 0; }
+
+  /* ----- the monster ----- */
+  #monster {
+    position: absolute; left: 50%; top: 50%;
+    width: 46vmin; height: 42vmin;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: breathe 3s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes breathe {
+    from { transform: translate(-50%, -50%) scale(1); }
+    to   { transform: translate(-50%, -50%) scale(1.04); }
+  }
+  #monster.happy { animation: wiggle .8s ease-in-out; }
+  @keyframes wiggle {
+    0% { transform: translate(-50%,-50%) rotate(0); }
+    20% { transform: translate(-50%,-50%) rotate(-6deg) scale(1.06); }
+    45% { transform: translate(-50%,-50%) rotate(6deg) scale(1.06); }
+    70% { transform: translate(-50%,-50%) rotate(-3deg); }
+    100% { transform: translate(-50%,-50%) rotate(0); }
+  }
+  #body {
+    position: absolute; inset: 0;
+    background: linear-gradient(165deg, #c69cff 0%, #9d6bf0 60%, #8a55e0 100%);
+    border-radius: 48% 52% 46% 54% / 58% 56% 44% 42%;
+    box-shadow: inset -14px -18px 40px rgba(60,20,120,.35), 0 18px 40px rgba(0,0,0,.35);
+  }
+  .horn {
+    position: absolute; top: -7%; width: 9%; height: 16%;
+    background: #ffd6a5; border-radius: 50% 50% 20% 20%;
+  }
+  .eye {
+    position: absolute; top: 22%;
+    width: 18%; height: 22%;
+    background: #fff; border-radius: 50%;
+    box-shadow: inset 0 -3px 8px rgba(0,0,0,.12);
+    animation: blink 4.5s infinite;
+  }
+  .pupil {
+    position: absolute; left: 30%; top: 34%;
+    width: 42%; height: 42%;
+    background: #2a1a40; border-radius: 50%;
+  }
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(.08); }
+  }
+  #mouth {
+    position: absolute; left: 50%; top: 64%;
+    width: 44%; height: 26%;
+    transform: translateX(-50%);
+    background: #4a1535; border-radius: 30% 30% 50% 50% / 36% 36% 64% 64%;
+    overflow: hidden;
+    transition: transform .15s ease;
+  }
+  #mouth::after {
+    content: ""; position: absolute; left: 18%; bottom: -28%;
+    width: 64%; height: 60%;
+    background: #ff6f91; border-radius: 50%;
+  }
+  #mouth.chomp { animation: chomp .5s ease; }
+  @keyframes chomp {
+    0% { transform: translateX(-50%) scaleY(1); }
+    30% { transform: translateX(-50%) scaleY(.2); }
+    55% { transform: translateX(-50%) scaleY(1.15); }
+    100% { transform: translateX(-50%) scaleY(1); }
+  }
+
+  /* ----- food ----- */
+  .food {
+    position: absolute; transform: translate(-50%, -50%);
+    font-size: clamp(54px, 11vmin, 96px); line-height: 1;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,.35));
+    animation: drift var(--dr) ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes drift {
+    from { transform: translate(-50%,-50%) translate(0,0) rotate(-6deg); }
+    to   { transform: translate(-50%,-50%) translate(var(--dxx), var(--dyy)) rotate(6deg); }
+  }
+  .food.flying {
+    animation: none;
+    transition: left .5s cubic-bezier(.4,0,.7,1), top .5s cubic-bezier(.4,0,.7,1), transform .5s ease;
+    transform: translate(-50%, -50%) scale(.25) rotate(360deg);
+    pointer-events: none;
+  }
+  .food.spawn { animation: spawnpop .4s cubic-bezier(.2,1.5,.4,1), drift var(--dr) ease-in-out .4s infinite alternate; }
+  @keyframes spawnpop { from { transform: translate(-50%,-50%) scale(0); } to { transform: translate(-50%,-50%) scale(1); } }
+
+  .yum {
+    position: absolute; left: 50%; top: 26%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(30px, 6vmin, 52px); font-weight: 800; color: #ffe9f3;
+    text-shadow: 0 4px 16px rgba(0,0,0,.4);
+    pointer-events: none;
+    animation: yumfloat 1.1s ease-out forwards;
+  }
+  @keyframes yumfloat {
+    0% { opacity: 0; transform: translate(-50%,-50%) scale(.4); }
+    20% { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, calc(-50% - 80px)) scale(1); }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="monster">
+    <div class="horn" style="left:24%; transform:rotate(-14deg);"></div>
+    <div class="horn" style="right:24%; transform:rotate(14deg);"></div>
+    <div id="body"></div>
+    <div class="eye" style="left:21%;"><div class="pupil"></div></div>
+    <div class="eye" style="right:21%;"><div class="pupil"></div></div>
+    <div id="mouth"></div>
+  </div>
+</div>
+<script src="common.js"></script>
+<script>
+(function () {
+  "use strict";
+  var stage = document.getElementById("stage");
+  var monster = document.getElementById("monster");
+  var mouth = document.getElementById("mouth");
+  var FOODS = ["🍓", "🍌", "🍎", "🍉", "🍇", "🍪", "🥕", "🍦", "🍕", "🧁"];
+  var YUMS = ["Nom nom!", "Yummy!", "Mmmm!", "More!", "Tasty!"];
+
+  function mouthCenter() {
+    var r = mouth.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  /* food spawns around the edges, never on top of the monster */
+  function foodSpot() {
+    var w = window.innerWidth, h = window.innerHeight;
+    var x, y, tries = 0;
+    do {
+      x = JS.rand(0.10, 0.90) * w;
+      y = JS.rand(0.14, 0.90) * h;
+      tries++;
+    } while (tries < 30 &&
+      Math.abs(x - w / 2) < w * 0.26 && Math.abs(y - h / 2) < h * 0.30);
+    return { x: x, y: y };
+  }
+
+  function spawnFood() {
+    var f = document.createElement("div");
+    f.className = "food spawn";
+    f.textContent = JS.pick(FOODS);
+    var p = foodSpot();
+    f.style.left = p.x + "px"; f.style.top = p.y + "px";
+    f.style.setProperty("--dr", JS.rand(2, 3.6).toFixed(1) + "s");
+    f.style.setProperty("--dxx", JS.rand(-22, 22).toFixed(0) + "px");
+    f.style.setProperty("--dyy", JS.rand(-18, 18).toFixed(0) + "px");
+    f.addEventListener("pointerdown", function (e) {
+      e.stopPropagation();
+      feed(f);
+    });
+    stage.appendChild(f);
+  }
+
+  function feed(f) {
+    if (f.dataset.eaten) return;
+    f.dataset.eaten = "1";
+    var m = mouthCenter();
+    f.classList.add("flying");
+    /* force layout so the transition picks up */
+    void f.offsetWidth;
+    f.style.left = m.x + "px";
+    f.style.top = m.y + "px";
+    JS.noise({ from: 1200, to: 2400, dur: 0.3, vol: 0.05, filter: "bandpass" }); /* whoosh */
+
+    setTimeout(function () {
+      f.remove();
+      mouth.classList.add("chomp");
+      monster.classList.add("happy");
+      setTimeout(function () { mouth.classList.remove("chomp"); }, 520);
+      setTimeout(function () { monster.classList.remove("happy"); }, 820);
+
+      /* gulp */
+      JS.tone({ freq: 380, slide: 110, type: "sine", dur: 0.3, vol: 0.18 });
+      JS.tone({ freq: 200, slide: 90, type: "triangle", dur: 0.25, vol: 0.1, delay: 0.12 });
+      var yum = JS.pick(YUMS);
+      JS.speak(yum, { pitch: 0.8, rate: 0.9 });
+
+      var y = document.createElement("div");
+      y.className = "yum";
+      y.textContent = yum;
+      y.addEventListener("animationend", function () { y.remove(); });
+      stage.appendChild(y);
+
+      JS.burst(mouthCenter().x, mouthCenter().y - 40, { count: 7, chars: ["💖", "✨", "⭐"], sizeMin: 14, sizeMax: 26 });
+      setTimeout(spawnFood, 600);
+    }, 520);
+  }
+
+  /* tapping the monster (or anywhere) gets a giggle */
+  var giggleBusy = false;
+  document.body.addEventListener("pointerdown", function () {
+    if (giggleBusy) return;
+    giggleBusy = true;
+    monster.classList.add("happy");
+    JS.tone({ freq: 520, slide: 760, type: "triangle", dur: 0.14, vol: 0.1 });
+    JS.tone({ freq: 640, slide: 880, type: "triangle", dur: 0.14, vol: 0.08, delay: 0.14 });
+    setTimeout(function () {
+      monster.classList.remove("happy");
+      giggleBusy = false;
+    }, 850);
+  });
+
+  for (var i = 0; i < 5; i++) setTimeout(spawnFood, i * 180);
+
+  JS.makeChips();
+})();
+</script>
+</body>
+</html>
