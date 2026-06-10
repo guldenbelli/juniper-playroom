@@ -110,18 +110,38 @@ window.JS = (function () {
   /* ---------- parent chips (hold 1 second) ---------- */
   function holdChip(el, cb) {
     var timer = null;
+    var holding = false;
+
+    /* capture:true so we intercept before any game listener sees it */
     el.addEventListener("pointerdown", function (e) {
       e.stopPropagation();
+      e.preventDefault();
+      holding = true;
+      el.setPointerCapture(e.pointerId);
       el.classList.add("holding");
       timer = setTimeout(function () {
+        if (!holding) return;
+        holding = false;
         el.classList.remove("holding");
         cb();
       }, 1000);
+    }, { capture: true });
+
+    function cancel(e) {
+      if (!holding) return;
+      holding = false;
+      clearTimeout(timer);
+      el.classList.remove("holding");
+      try { el.releasePointerCapture(e.pointerId); } catch (ex) {}
+    }
+    /* cancel only if finger lifted or left the element */
+    el.addEventListener("pointerup",     cancel, { capture: true });
+    el.addEventListener("pointercancel", cancel, { capture: true });
+    el.addEventListener("lostpointercapture", function () {
+      holding = false;
+      clearTimeout(timer);
+      el.classList.remove("holding");
     });
-    function cancel() { clearTimeout(timer); el.classList.remove("holding"); }
-    el.addEventListener("pointerup", cancel);
-    el.addEventListener("pointerleave", cancel);
-    el.addEventListener("pointercancel", cancel);
   }
 
   api.makeChips = function (opts) {
@@ -149,10 +169,11 @@ window.JS = (function () {
   /* ---------- shared styles ---------- */
   var style = document.createElement("style");
   style.textContent =
-    ".js-chip{position:absolute;width:46px;height:46px;border-radius:50%;" +
-    "background:rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;" +
-    "font-size:22px;opacity:.55;z-index:50;transition:transform .2s, background .2s;}" +
-    ".js-chip.holding{background:rgba(255,255,255,.3);transform:scale(1.15);}" +
+    ".js-chip{position:absolute;width:58px;height:58px;border-radius:50%;" +
+    "background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;" +
+    "font-size:26px;opacity:.75;z-index:999;transition:transform .2s, background .2s;" +
+    "touch-action:none;-webkit-user-select:none;user-select:none;}" +
+    ".js-chip.holding{background:rgba(255,255,255,.45);transform:scale(1.2);opacity:1;}" +
     ".js-chip-left{top:calc(env(safe-area-inset-top,0px) + 12px);left:calc(env(safe-area-inset-left,0px) + 12px);}" +
     ".js-chip-right{top:calc(env(safe-area-inset-top,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 12px);}" +
     ".js-spark{position:absolute;transform:translate(-50%,-50%);pointer-events:none;line-height:1;" +
